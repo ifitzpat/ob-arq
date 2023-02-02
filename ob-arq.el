@@ -111,7 +111,7 @@ STDERR with `org-babel-eval-error-notify'."
     (with-temp-file query-file (insert body))
     (with-temp-file source-file (insert data))
     (with-current-buffer err-buff (erase-buffer))
-	(shell-command-to-string (concat "arq --query " query-file " --data " source-file " --results=" format))
+	(org-babel-script-escape (string-replace "\r" "" (shell-command-to-string (concat "arq --query " query-file " --data " source-file " --results=" format)) ) )
 	  ))
 
 
