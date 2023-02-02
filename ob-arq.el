@@ -46,7 +46,7 @@
 
 
 ;; optionally declare default header arguments for this language
-(defvar org-babel-default-header-args:arq '((:source . nil)))
+(defvar org-babel-default-header-args:arq '((:source . nil)(:format "CSV")))
 
 ;; This function expands the body of a source code block by doing
 ;; things like prepending argument definitions to the body, it should
@@ -80,10 +80,11 @@
 This function is called by `org-babel-execute-src-block'"
   (let* ((vars (org-babel--get-vars params))
 	 (source (if (assoc :source params) (cdr (assoc :source params)) nil))
+	 (format (if (assoc :format params) (cdr (assoc :format params)) "csv"))
 	 )
 
     (message (concat "executing arq on source block named " source))
-    (org-babel-eval-arq source body)
+    (org-babel-eval-arq source body format)
     )
   ;; when forming a shell command, or a fragment of code in some
   ;; other language, please preprocess any file names involved with
@@ -97,7 +98,7 @@ This function is called by `org-babel-execute-src-block'"
          (org-element-property :value (org-element-at-point))))
 
 
-(defun org-babel-eval-arq (source body)
+(defun org-babel-eval-arq (source body format)
   "Run CMD on BODY.
 If CMD succeeds then return its results, otherwise display
 STDERR with `org-babel-eval-error-notify'."
@@ -110,7 +111,7 @@ STDERR with `org-babel-eval-error-notify'."
     (with-temp-file query-file (insert body))
     (with-temp-file source-file (insert data))
     (with-current-buffer err-buff (erase-buffer))
-	(shell-command-to-string (concat "arq --query " query-file " --data " source-file))
+	(shell-command-to-string (concat "arq --query " query-file " --data " source-file " --results=" format))
 	  ))
 
 
