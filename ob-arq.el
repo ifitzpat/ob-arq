@@ -1,4 +1,4 @@
-;;; ob-docker-build.el --- org-babel functions for dockerfile evaluation
+;;; ob-arq.el --- org-babel functions for dockerfile evaluation
 
 ;; Copyright (C) Dr. Ian FitzPatrick
 
@@ -37,23 +37,23 @@
 ;(require 'ob-ref)
 ;(require 'ob-comint)
 ;(require 'ob-eval)
-(require 'dockerfile-mode)
+(require 'sparql-mode)
 
 ;; possibly require modes required for your language
-(define-derived-mode docker-build-mode dockerfile-mode "docker-build"
+(define-derived-mode arq-mode sparql-mode "arq-build"
   "Major mode for building docker containers from org-babel."
   )
 
 
 ;; optionally declare default header arguments for this language
-(defvar org-babel-default-header-args:docker-build '((:context . nil)(:tag . nil)(:push . nil)))
+(defvar org-babel-default-header-args:arq '((:source . nil)))
 
 ;; This function expands the body of a source code block by doing
 ;; things like prepending argument definitions to the body, it should
-;; be called by the `org-babel-execute:docker-build' function below.
-(defun org-babel-expand-body:docker-build (body params &optional processed-params)
+;; be called by the `org-babel-execute:arq' function below.
+(defun org-babel-expand-body:arq (body params &optional processed-params)
   "Expand BODY according to PARAMS, return the expanded body."
-  ;(require 'inf-docker-build) : TODO check if needed
+  ;(require 'inf-arq) : TODO check if needed
   body ; TODO translate params to yaml variables
 )
 
@@ -76,32 +76,15 @@
 ;; "session" evaluation).  Also you are free to define any new header
 ;; arguments which you feel may be useful -- all header arguments
 ;; specified by the user will be available in the PARAMS variable.
-(defun org-babel-execute:docker-build (body params)
-  "Execute a block of docker-build code with org-babel.
+(defun org-babel-execute:arq (body params)
+  "Execute a block of arq code with org-babel.
 This function is called by `org-babel-execute-src-block'"
   (let* ((vars (org-babel--get-vars params))
-	 (tag (if (assoc :tag params) (cdr (assoc :tag params)) nil))
-	 (push (if (assoc :push params) (cdr (assoc :push params)) nil))
-	 (dir (cdr-safe (assoc :dir params)))
-	 (tag-param (if tag (concat " -t " tag) ""))
-	 (push-param (if push (concat " -t " push) ""))
+	 (source (if (assoc :source params) (cdr (assoc :source params)) nil))
 	 )
 
-    (message tag)
-
-    (if (not dir)
-	(error "A build context is required for Docker.  Please provide a :dir header arg")
-	)
-
-    (message "executing docker-build source code block")
-    (if push
-	(progn
-	  (org-babel-eval-docker-build (concat "docker build " dir tag-param push-param " -f" ) body dir)
-	  (sleep-for 3)
-	  (async-shell-command (concat "docker push " push) "*docker-push*")
-	  )
-	  (org-babel-eval-docker-build (concat "docker build " dir tag-param " -f" ) body dir)
-      )
+    (message "executing arq source code block")
+    (org-babel-eval-arq source body)
     )
   ;; when forming a shell command, or a fragment of code in some
   ;; other language, please preprocess any file names involved with
@@ -109,20 +92,27 @@ This function is called by `org-babel-execute-src-block'"
   ;; function is used in the language files)
   )
 
+(defun ob-arq-src-content (name)
+       (save-excursion
+         (org-babel-goto-named-src-block name)
+         (org-element-property :value (org-element-at-point))))
 
-(defun org-babel-eval-docker-build (cmd body dir)
+
+(defun org-babel-eval-arq (source body)
   "Run CMD on BODY.
 If CMD succeeds then return its results, otherwise display
 STDERR with `org-babel-eval-error-notify'."
   (let ((err-buff (get-buffer-create " *Org-Babel Error*"))
-	(docker-file (org-babel-temp-file "ob-docker-build-docker-"))
-	(output-file (org-babel-temp-file "ob-docker-build-out-"))
-	(org-babel-temporary-directory dir)
+	(query-file (org-babel-temp-file "ob-arq-query-"))
+	(source-file (org-babel-temp-file "ob-arq-source-"))
+	(output-file (org-babel-temp-file "ob-arq-out-"))
+	;(org-babel-temporary-directory dir)
 	exit-code)
-    (with-temp-file docker-file (insert body))
+    (with-temp-file query-file (insert body))
+    (with-temp-file source-file (insert (ob-arq-src-content source)))
     (with-current-buffer err-buff (erase-buffer))
     ;; (setq exit-code
-	  (async-shell-command (concat cmd " " docker-file) output-file err-buff)
+	  (async-shell-command (concat arq "--query " query-file "--data " source-file) output-file err-buff)
 	  ;; )
       ;; (if (or (not (numberp exit-code)) (> exit-code 0))
       ;; 	  (progn
@@ -141,5 +131,5 @@ STDERR with `org-babel-eval-error-notify'."
       ))
 
 
-(provide 'ob-docker-build)
-;;; ob-docker-build.el ends here
+(provide 'ob-arq)
+;;; ob-arq.el ends here
