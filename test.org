@@ -1,6 +1,9 @@
 
 #+name: graphdata
 #+begin_src ttl
+@prefix example: <http://example.org/>.
+
+example:this a example:graph.
 
 #+end_src
 
@@ -10,3 +13,8 @@ WHERE { ?s ?p ?o. }
 #+end_src
 
 #+RESULTS:
+: -----------------------------
+: | s                         |
+: =============================
+: | <http://example.org/this> |
+: -----------------------------

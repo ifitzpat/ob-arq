@@ -1,4 +1,4 @@
-;;; ob-arq.el --- org-babel functions for dockerfile evaluation
+;;; ob-arq.el --- org-babel functions for evaluating sparql queries on org source blocks
 
 ;; Copyright (C) Dr. Ian FitzPatrick
 
@@ -26,7 +26,7 @@
 
 ;;; Commentary:
 ;;
-;; call docker build on org babel block
+;; call arq on org source block by name
 ;;
 
 ;;; Requirements:
@@ -53,7 +53,6 @@
 ;; be called by the `org-babel-execute:arq' function below.
 (defun org-babel-expand-body:arq (body params &optional processed-params)
   "Expand BODY according to PARAMS, return the expanded body."
-  ;(require 'inf-arq) : TODO check if needed
   body ; TODO translate params to yaml variables
 )
 
@@ -83,7 +82,7 @@ This function is called by `org-babel-execute-src-block'"
 	 (source (if (assoc :source params) (cdr (assoc :source params)) nil))
 	 )
 
-    (message "executing arq source code block")
+    (message (concat "executing arq on source block named " source))
     (org-babel-eval-arq source body)
     )
   ;; when forming a shell command, or a fragment of code in some
@@ -103,32 +102,16 @@ This function is called by `org-babel-execute-src-block'"
 If CMD succeeds then return its results, otherwise display
 STDERR with `org-babel-eval-error-notify'."
   (let ((err-buff (get-buffer-create " *Org-Babel Error*"))
-	(query-file (org-babel-temp-file "ob-arq-query-"))
-	(source-file (org-babel-temp-file "ob-arq-source-"))
+	(query-file (org-babel-temp-file "ob-arq-query-" ".sparql"))
+	(source-file (org-babel-temp-file "ob-arq-source-" ".ttl"))
+	(data (ob-arq-src-content source))
 	(output-file (org-babel-temp-file "ob-arq-out-"))
-	;(org-babel-temporary-directory dir)
 	exit-code)
     (with-temp-file query-file (insert body))
-    (with-temp-file source-file (insert (ob-arq-src-content source)))
+    (with-temp-file source-file (insert data))
     (with-current-buffer err-buff (erase-buffer))
-    ;; (setq exit-code
-	  (async-shell-command (concat arq "--query " query-file "--data " source-file) output-file err-buff)
-	  ;; )
-      ;; (if (or (not (numberp exit-code)) (> exit-code 0))
-      ;; 	  (progn
-      ;; 	    (with-current-buffer err-buff
-      ;; 	      (org-babel-eval-error-notify exit-code (buffer-string)))
-      ;; 	    (save-excursion
-      ;; 	      (when (get-buffer org-babel-error-buffer-name)
-      ;; 		(with-current-buffer org-babel-error-buffer-name
-      ;; 		  (unless (derived-mode-p 'compilation-mode)
-      ;; 		    (compilation-mode))
-      ;; 		  ;; Compilation-mode enforces read-only, but Babel expects the buffer modifiable.
-      ;; 		  (setq buffer-read-only nil))))
-      ;; 	    nil)
-      ;; 	; return the contents of output file
-      ;; 	(with-current-buffer output-file (buffer-string)))
-      ))
+	(shell-command-to-string (concat "arq --query " query-file " --data " source-file))
+	  ))
 
 
 (provide 'ob-arq)
