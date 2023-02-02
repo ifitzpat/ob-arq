@@ -48,6 +48,8 @@ contains the rdf data to be queried.
 
 ** Roadmap
 
+ - Support other serialisations than ttl
+ - output org tables
 
 ** Contributing
 
