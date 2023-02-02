@@ -1,0 +1,12 @@
+
+#+name: graphdata
+#+begin_src ttl
+
+#+end_src
+
+#+begin_src arq :source graphdata
+SELECT ?s
+WHERE { ?s ?p ?o. }
+#+end_src
+
+#+RESULTS:
